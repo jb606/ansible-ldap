@@ -10,7 +10,13 @@
 base_dn: dc=example,dc=com
 admin_dn: "cn=admin,{{base_dn}}"
 admin_pw: "."
-ldap_server: "ldap://dir.example.com:389"
+
+
+ldap_hostname: "dir.example.com"
+ldap_connection: ldap   # ldap or ldaps
+ldap_port: 389
+ldap_server: "{{ ldap_connection }}://{{ ldap_hostname }}:{{ldap_port}}"
+
 
 # Service account DNs used in 05-acls.ldif.
 # Passwords must be stored in vault.yaml.

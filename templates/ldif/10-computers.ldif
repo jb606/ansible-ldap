@@ -1,0 +1,15 @@
+dn: ou=Computers,{{ base_dn }}
+objectClass: top
+objectClass: organizationalUnit
+ou: Computers
+
+dn: cn={{ ldap_hostname }},ou=Computers,{{ base_dn }}
+objectClass: top
+objectClass: device
+cn: {{ ldap_hostname }}
+
+dn: cn=DomainComputers,ou=Groups,{{ base_dn }}
+objectClass: top
+objectClass: groupOfUniqueNames
+cn: DomainComputers
+uniqueMember: cn={{ ldap_hostname }},ou=Computers,{{ base_dn }}
