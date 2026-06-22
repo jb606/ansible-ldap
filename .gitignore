@@ -1,0 +1,8 @@
+env/
+vault.yaml
+vault.yml
+inventory.yaml
+ansible.cfg
+.sudo
+.ansible
+.vault

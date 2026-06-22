@@ -1,0 +1,48 @@
+---
+- name: Setting up ldap servers
+  hosts: ldap_servers
+  become: true
+  gather_facts: false
+  vars_files:
+    - vars.yaml
+    - vault.yaml
+  tasks:
+    - name: Getting OS Information
+      ansible.builtin.setup:
+        gather_subset:
+          - min
+    - name: Checking for bootstrap flag
+      ansible.builtin.stat:
+        path: /etc/.openldap-installed
+      register: bootstrap
+
+    - name: Running EL Openldap setup
+      ansible.builtin.include_tasks: bootstrap-ldap/bootstrap-ldap-rl.yaml
+      when:
+        - ansible_facts.os_family == "RedHat"
+        - not bootstrap.stat.exists
+
+    - name: Setting bootstrap flag to true -- /etc/.openldap-installed
+      ansible.builtin.copy:
+        content: "TRUE"
+        dest: /etc/.openldap-installed
+        owner: root
+        group: root
+        mode: '0600'
+      when: not bootstrap.stat.exists
+
+
+
+  handlers:
+    - name: Cleanup tmp
+      ansible.builtin.file:
+        path: "{{ remote_tmpdir }}"
+        state: absent
+    - name: Enable openldap on boot
+      ansible.builtin.systemd:
+        name: slapd.service
+        state: enabled
+    - name: Restart openldap
+      ansible.builtin.systemd:
+        name: slapd.service
+        state: restarted

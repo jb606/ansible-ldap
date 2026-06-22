@@ -1,0 +1,16 @@
+dn: ou=Policies,{{ base_dn }}
+objectClass: top
+objectClass: organizationalUnit
+ou: Policies
+
+dn: ou=Password,ou=Policies,{{ base_dn }}
+objectClass: top
+objectClass: organizationalUnit
+ou: Password
+
+dn: ou=Sudoers,ou=Policies,{{ base_dn }}
+objectClass: top
+objectClass: organizationalUnit
+ou: Sudoers
+
+

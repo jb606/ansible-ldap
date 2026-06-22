@@ -1,0 +1,77 @@
+---
+- name: Add LDAP Users 
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+
+  vars:
+    ldap_server: "ldap://localhost:389"
+    admin_dn: "cn=admin,dc=example,dc=com"
+    admin_pw: "."
+    base_dn: "dc=example,dc=com"
+    var_default_shell: "/bin/bash"
+    var_default_home_path: "/home"
+    var_min_password_length: 15
+    var_min_password_age: 1
+    var_password_warn_age: 14
+    var_inactive_days: 35
+    var_account_expire_days: -1
+    var_max_password_age: 60
+    var_default_password: "."
+    var_approved_users: []
+
+  vars_files:
+    - vars.yaml
+    - vault.yaml
+
+  tasks:
+
+    - name: Create group entries in ou=Groups
+      community.general.ldap_entry:
+        dn: "cn={{ item.user_name }},ou=Groups,{{ base_dn }}"
+        objectClass:
+          - top
+          - posixGroup
+        attributes:
+          cn: "{{ item.user_name }}"
+          gidNumber: "{{ item.gid }}"
+        server_uri: "{{ ldap_server }}"
+        bind_dn: "{{ admin_dn }}"
+        bind_pw: "{{ admin_pw }}"
+        state: present
+      loop: "{{ var_approved_users }}"
+      when: item.enabled | default(true)
+
+    - name: Create user entries in ou=People
+      community.general.ldap_entry:
+        dn: "uid={{ item.user_name }},ou=People,{{ base_dn }}"
+        objectClass:
+          - top
+          - person
+          - organizationalPerson
+          - inetOrgPerson
+          - posixAccount
+          - shadowAccount
+        attributes:
+          uid: "{{ item.user_name }}"
+          cn: "{{ item.first_name }} {{ item.last_name }}"
+          sn: "{{ item.last_name }}"
+          givenName: "{{ item.first_name }}"
+          uidNumber: "{{ item.uid }}"
+          gidNumber: "{{ item.gid }}"
+          homeDirectory: "{{ item.homeDirectory | default(var_default_home_path) + '/' + item.user_name  }}"
+          loginShell: "{{ item.shell | default(var_default_shell) }}"
+          shadowMin: "{{ var_min_password_length}}"
+          shadowMax: "{{ var_max_password_age }}"
+          shadowWarning: "{{ var_password_warn_age }}"
+          shadowInactive: "{{ var_inactive_days }}"
+          shadowExpire: "{{ var_account_expire_days }}"
+        server_uri: "{{ ldap_server }}"
+        bind_dn: "{{ admin_dn }}"
+        bind_pw: "{{ admin_pw }}"
+        state: present
+      loop: "{{ var_approved_users }}"
+      when: item.enabled | default(true)
+
+

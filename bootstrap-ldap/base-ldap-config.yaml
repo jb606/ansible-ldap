@@ -1,0 +1,55 @@
+--- 
+ #--- Generate credentials ---
+
+- name: Generate admin password hash
+  ansible.builtin.command: "slappasswd -s {{ admin_pw | quote }}"
+  register: slappasswd_result
+  no_log: true
+  changed_when: false
+
+- name: Set admin_dn_hash fact
+  ansible.builtin.set_fact:
+    admin_dn_hash: "{{ slappasswd_result.stdout }}"
+  no_log: true
+
+# --- Template config LDIFs to remote tmpdir ---
+
+- name: Template slapd base configuration
+  ansible.builtin.template:
+    src: "{{ base_config_template }}"
+    dest: "{{ remote_tmpdir }}/basecfg.ldif"
+    owner: ldap
+    group: ldap
+    mode: '0600'
+
+- name: Template slapd database configuration
+  ansible.builtin.template:
+    src: "{{ config_template_dir }}/01-db.ldif"
+    dest: "{{ remote_tmpdir }}/01-db.ldif"
+    owner: ldap
+    group: ldap
+    mode: '0600'
+
+# --- Bootstrap slapd config database (slapd must be stopped) ---
+
+- name: Load slapd base configuration
+  ansible.builtin.command: >
+    slapadd -n 0 -F /etc/openldap/slapd.d -l {{ remote_tmpdir }}/basecfg.ldif
+  changed_when: true
+
+- name: Ensure core schema is in ldap_schema
+  ansible.builtin.set_fact:
+    ldap_schema: "{{ (['core'] + ldap_schema) | unique }}"
+  when: "'core' not in ldap_schema"
+
+- name: Load LDAP schemas
+  ansible.builtin.command: >
+    slapadd -n 0 -F /etc/openldap/slapd.d
+    -l /etc/openldap/schema/{{ item }}.ldif
+  loop: "{{ ldap_schema }}"
+  changed_when: true
+
+- name: Load slapd database configuration
+  ansible.builtin.command: >
+    slapadd -n 0 -F /etc/openldap/slapd.d -l {{ remote_tmpdir }}/01-db.ldif
+  changed_when: true

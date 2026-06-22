@@ -1,0 +1,35 @@
+---
+# --- Populate the LDAP directory tree ---
+
+- name: "Create {{ remote_tmpdir }} directory"
+  ansible.builtin.file:
+    path: "{{ remote_tmpdir }}"
+    state: directory
+    owner: ldap
+    group: ldap
+    mode: '0700'
+  notify: Cleanup tmp
+
+- name: Discover LDAP directory tree files
+  ansible.builtin.set_fact:
+    ldap_modify_files: >-
+      {{ query('fileglob', post_config_ldapmodify_dir + '/*.ldif')
+         | map('basename') | list
+         | sort }}
+
+- name: Template LDAP directory tree files
+  ansible.builtin.template:
+    src: "{{ post_config_ldapmodify_dir }}/{{ item }}"
+    dest: "{{ remote_tmpdir }}/{{ item }}"
+    owner: ldap
+    group: ldap
+    mode: '0600'
+  loop: "{{ ldap_modify_files }}"
+
+- name: Load LDAP directory tree
+  ansible.builtin.command: >
+    ldapmodify -Y EXTERNAL -H ldapi:///
+    -f {{ remote_tmpdir }}/{{ item }}
+  loop: "{{ ldap_modify_files }}"
+  no_log: true
+  changed_when: true

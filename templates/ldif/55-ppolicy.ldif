@@ -1,0 +1,21 @@
+dn: cn=Default,ou=Password,ou=Policies,{{ base_dn }}
+objectClass: top
+objectClass: device
+objectClass: pwdPolicy
+cn: Default
+description: Default password policy
+pwdAttribute: userPassword
+pwdMinAge: {{ var_min_password_age | int * 86400 }}
+pwdMaxAge: {{ var_max_password_age | int * 86400 }}
+pwdExpireWarning: {{ var_password_warn_age | int * 86400 }}
+pwdInHistory: {{ var_password_history_count }}
+pwdLockout: TRUE
+pwdMaxFailure: {{ var_max_password_tries }}
+pwdFailureCountInterval: 900
+pwdLockoutDuration: {{ var_account_lockout_time | int * 60 }}
+# Enforce quality checking if a check module is present; otherwise rely on PAM pwquality on clients
+pwdCheckQuality: 2
+# Require change after reset (clients must honor ppolicy response control)
+pwdMustChange: TRUE
+
+

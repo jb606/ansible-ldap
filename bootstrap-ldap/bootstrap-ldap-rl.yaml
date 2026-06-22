@@ -1,0 +1,119 @@
+---
+- name: Installing openldap
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: latest
+    update_cache: true
+  with_items:
+    - openldap-servers
+    - openldap-clients
+    - python3-firewall
+    - python3-ldap
+
+- name: Stop and disable slapd if running
+  ansible.builtin.systemd:
+    name: slapd.service
+    state: stopped
+    enabled: false
+  ignore_errors: true
+
+- name: Remove default slapd.d config
+  ansible.builtin.file:
+    path: /etc/openldap/slapd.d
+    state: absent
+
+- name: Remove default data directory
+  ansible.builtin.file:
+    path: /var/lib/ldap
+    state: absent
+
+- name: Recreate slapd.d directory
+  ansible.builtin.file:
+    path: /etc/openldap/slapd.d
+    state: directory
+    owner: ldap
+    group: ldap
+    mode: '0700'
+
+- name: Recreate data directory
+  ansible.builtin.file:
+    path: /var/lib/ldap
+    state: directory
+    owner: ldap
+    group: ldap
+    mode: '0700'
+
+
+
+- name: Create slapd audit log directory
+  ansible.builtin.file:
+    path: /var/log/slapd
+    state: directory
+    owner: ldap
+    group: ldap
+    mode: '0750'
+
+
+- ansible.builtin.include_tasks: base-ldap-config.yaml
+
+# --- Fix ownership and SELinux contexts before starting slapd ---
+
+- name: Set ownership on slapd config directory
+  ansible.builtin.file:
+    path: /etc/openldap/slapd.d
+    owner: ldap
+    group: ldap
+    recurse: true
+
+- name: Set ownership on slapd data directory
+  ansible.builtin.file:
+    path: /var/lib/ldap
+    owner: ldap
+    group: ldap
+    recurse: true
+
+- name: Restore SELinux context on slapd directories
+  ansible.builtin.command: "restorecon -Rv {{ item }}"
+  loop:
+    - /etc/openldap/slapd.d
+    - /var/lib/ldap
+    - /var/log/slapd
+  changed_when: false
+  failed_when: false
+
+# --- Start slapd and open firewall ---
+
+- name: Start and enable slapd
+  ansible.builtin.systemd:
+    name: slapd.service
+    state: started
+    enabled: true
+
+- name: Open LDAP port in firewall
+  tags:
+    - firewall
+  ansible.posix.firewalld:
+    service: ldap
+    permanent: true
+    state: enabled
+    immediate: true
+  ignore_errors: true
+
+- name: Open LDAPS port in firewall
+  tags:
+    - firewall
+  ansible.posix.firewalld:
+    service: ldaps
+    permanent: true
+    state: enabled
+    immediate: true
+  when: tls_enabled
+  ignore_errors: true
+
+- ansible.builtin.include_tasks: load-ldap-tree.yaml
+
+- ansible.builtin.include_tasks: configure-tls.yaml
+
+- ansible.builtin.include_tasks: add-service-accounts.yaml
+
+- ansible.builtin.include_tasks: ldapmodify.yaml

@@ -1,0 +1,60 @@
+---
+# --- Load overlays into cn=config via SASL EXTERNAL ---
+# Root (uid=0) is granted manage access via peercred in 01-db.ldif.
+- name: "Create {{ remote_tmpdir }} directory"
+  ansible.builtin.file:
+    path: "{{ remote_tmpdir }}"
+    state: directory
+    owner: ldap
+    group: ldap
+    mode: '0700'
+  notify: Cleanup tmp
+  
+- name: Discover slapd overlay configuration files
+  ansible.builtin.set_fact:
+    slapd_overlay_files: >-
+      {{ query('fileglob', config_template_dir + '/*.ldif')
+         | map('basename') | list
+         | difference(['01-db.ldif', 'basecfg.ldif'])
+         | sort }}
+
+- name: Template slapd overlay configuration files
+  ansible.builtin.template:
+    src: "{{ config_template_dir }}/{{ item }}"
+    dest: "{{ remote_tmpdir }}/{{ item }}"
+    owner: ldap
+    group: ldap
+    mode: '0600'
+  loop: "{{ slapd_overlay_files }}"
+
+- name: Load slapd overlay configurations
+  ansible.builtin.command: >
+    ldapadd -Y EXTERNAL -H ldapi:/// -f {{ remote_tmpdir }}/{{ item }}
+  loop: "{{ slapd_overlay_files }}"
+  changed_when: true
+
+# --- Populate the LDAP directory tree ---
+
+- name: Discover LDAP directory tree files
+  ansible.builtin.set_fact:
+    ldap_tree_files: >-
+      {{ query('fileglob', ldap_tree_template_dir + '/*.ldif')
+         | map('basename') | list
+         | sort }}
+
+- name: Template LDAP directory tree files
+  ansible.builtin.template:
+    src: "{{ ldap_tree_template_dir }}/{{ item }}"
+    dest: "{{ remote_tmpdir }}/{{ item }}"
+    owner: ldap
+    group: ldap
+    mode: '0600'
+  loop: "{{ ldap_tree_files }}"
+
+- name: Load LDAP directory tree
+  ansible.builtin.command: >
+    ldapadd -Y EXTERNAL -H ldapi:///
+    -f {{ remote_tmpdir }}/{{ item }}
+  loop: "{{ ldap_tree_files }}"
+  no_log: true
+  changed_when: true

@@ -1,0 +1,44 @@
+---
+# --- TLS configuration (skipped when tls_enabled: false) ---
+
+- name: Configure slapd TLS
+  when: tls_enabled
+  block:
+    - name: "Create {{ remote_tmpdir }} directory"
+      ansible.builtin.file:
+        path: "{{ remote_tmpdir }}"
+        state: directory
+        owner: ldap
+        group: ldap
+        mode: '0700'
+      notify: Cleanup tmp
+    
+    - name: Grant ldap group read access to TLS private key
+      ansible.builtin.file:
+        path: "{{ tls_key_file_path }}"
+        group: ldap
+        mode: '0640'
+
+    - name: Write TLS configuration LDIF
+      ansible.builtin.copy:
+        content: |
+          dn: cn=config
+          changetype: modify
+          replace: olcTLSCACertificateFile
+          olcTLSCACertificateFile: {{ tls_ca_file_path }}
+          -
+          replace: olcTLSCertificateFile
+          olcTLSCertificateFile: {{ tls_cert_file_path }}
+          -
+          replace: olcTLSCertificateKeyFile
+          olcTLSCertificateKeyFile: {{ tls_key_file_path }}
+          -
+          replace: olcTLSVerifyClient
+          olcTLSVerifyClient: {{ tls_verify_client }}
+        dest: "{{ remote_tmpdir }}/tls.ldif"
+        mode: '0600'
+
+    - name: Apply TLS configuration to slapd
+      ansible.builtin.command: >
+        ldapmodify -Y EXTERNAL -H ldapi:/// -f {{ remote_tmpdir }}/tls.ldif
+      changed_when: true

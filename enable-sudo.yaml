@@ -1,0 +1,71 @@
+---
+- name: Enable sudo schema on OpenLDAP server
+  hosts: ldap_servers
+  become: true
+  gather_facts: false
+  vars_files:
+    - vars.yaml
+    - vault.yaml
+  tasks:
+    - name: Gathering OS facts
+      ansible.builtin.setup:
+        gather_subset:
+          - min
+
+    - name: Setting OS-specific variables for RedHat family
+      ansible.builtin.set_fact:
+        # sudo ships the schema on EL; schema.OpenLDAP is not in LDIF format
+        # so we use our own LDIF (templates/slapd/sudo.ldif) for all distros
+        sudo_schema_package: sudo
+      when: ansible_facts.os_family == "RedHat"
+
+    - name: Setting OS-specific variables for Debian family
+      ansible.builtin.set_fact:
+        # sudo-ldap adds LDAP support to sudo and ships /etc/ldap/schema/sudo.ldif
+        # We still use our own LDIF to stay consistent across distros
+        sudo_schema_package: sudo-ldap
+      when: ansible_facts.os_family == "Debian"
+
+    - name: Installing sudo LDAP package
+      ansible.builtin.package:
+        name: "{{ sudo_schema_package }}"
+        state: present
+
+    - name: Creating remote temp directory
+      ansible.builtin.file:
+        path: "{{ remote_tmpdir }}"
+        state: directory
+        owner: ldap
+        group: ldap
+        mode: '0700'
+      notify: Cleanup tmp
+
+    - name: Templating sudo schema LDIF
+      ansible.builtin.template:
+        src: templates/other/sudo.ldif
+        dest: "{{ remote_tmpdir }}/sudo.ldif"
+        owner: ldap
+        group: ldap
+        mode: '0600'
+
+    - name: Checking if sudo schema is already loaded
+      ansible.builtin.command: >
+        ldapsearch -LLL -Y EXTERNAL -H ldapi:///
+        -b cn=schema,cn=config -s one
+        '(olcObjectClasses=*sudoRole*)' dn
+      register: sudo_schema_check
+      changed_when: false
+      failed_when: false
+
+    - name: Loading sudo schema into OpenLDAP
+      ansible.builtin.command: >
+        ldapadd -Y EXTERNAL -H ldapi:///
+        -f {{ remote_tmpdir }}/sudo.ldif
+      when: sudo_schema_check.stdout | trim | length == 0
+      changed_when: true
+
+  handlers:
+    - name: Cleanup tmp
+      ansible.builtin.file:
+        path: "{{ remote_tmpdir }}"
+        state: absent

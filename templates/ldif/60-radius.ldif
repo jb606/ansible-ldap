@@ -1,0 +1,14 @@
+dn: ou=Computers,{{ base_dn }}
+objectClass: top
+objectClass: organizationalUnit
+ou: Computers
+
+dn: ou=Radius,{{ base_dn }}
+objectClass: top
+objectClass: organizationalUnit
+ou: Radius
+
+dn: ou=Devices,ou=Radius,{{ base_dn }}
+objectClass: top
+objectClass: organizationalUnit
+ou: Devices

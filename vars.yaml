@@ -1,0 +1,97 @@
+---
+
+# File: vars.yaml
+#
+#  Defaults for all the ansible-ldap playbooks.  Be sure to vault anything with a password!
+
+#
+# Base Domain Config 
+#
+base_dn: dc=example,dc=com
+admin_dn: "cn=admin,{{base_dn}}"
+admin_pw: "."
+ldap_server: "ldap://dir.example.com:389"
+
+# Service account DNs used in 05-acls.ldif.
+# Passwords must be stored in vault.yaml.
+# These accounts must exist in the directory before clients use them.
+nss_bind_dn: "cn=nss,ou=ServiceAccounts,{{base_dn}}"
+sudo_bind_dn: "cn=sudo,ou=ServiceAccounts,{{base_dn}}"
+radius_bind_dn: "cn=radius,ou=ServiceAccounts,{{base_dn}}"
+domain: example
+organization: com
+
+remote_tmpdir: /tmp/ansible-ldap
+
+base_config_template: templates/slapd/basecfg.ldif
+config_template_dir: templates/slapd
+ldap_tree_template_dir: templates/ldif
+post_config_ldapmodify_dir: templates/ldapmodify
+
+# By default playbooks will search /etc/openldap/schema and will append .ldif
+ldap_schema:
+  - core
+  - cosine
+  - inetorgperson
+  - nis
+
+service_accounts:
+  - user: bind
+    password: 'changeme'
+  - user: nss
+    password: 'changeme'
+  - user: sudo
+    password: 'changeme'
+  - user: admin
+    password: "changeme"
+
+
+tls_enabled: false
+tls_cert_file_path: /etc/path/to/server/cert.crt
+tls_key_file_path: /etc/path/to/server/key.key
+tls_ca_file_path: /etc/path/to/server/chain.crt
+# Options:
+#  - never: Don't as a client for a certificate
+#  - allow: Server will ask for a client certificate but will ignore the result
+#  - try:  Same as allow but will but the server will process and act based on the verification result
+#  - demand: Client must present a vaild certificate.
+tls_verify_client: never
+
+
+########################################################################################################
+
+# All time values are in days unless noted
+
+# Security Settings
+var_max_password_age: 180
+var_min_password_length: 12
+var_min_password_age: 1
+var_password_warn_age: 14
+var_inactive_days: 35
+var_account_expire_days: -1
+var_password_history_count: 24
+var_max_password_tries: 5
+var_account_lockout_time: 15 # Minutes
+
+
+# Default User Settings
+var_default_home: !!str /home
+var_default_shell: !!str /bin/bash
+
+#Example Users
+var_approved_users:
+  - user_name: bsmith
+    first_name: Bob
+    last_name: Smith
+    uid: 100100
+    gid: 100100
+    homeDirectory: /home/bsmith
+    shell: /bin/bash
+    enabled: true
+    
+  - user_name: jdoe
+    first_name: Jane
+    last_name: Doe
+    uid: 100101
+    gid: 100101
+
