@@ -1,4 +1,13 @@
 ---
+- name: "Create {{ remote_tmpdir }} directory"
+  ansible.builtin.file:
+    path: "{{ remote_tmpdir }}"
+    state: directory
+    owner: ldap
+    group: ldap
+    mode: '0700'
+  notify: Cleanup tmp
+
 - name: Installing openldap
   ansible.builtin.package:
     name: "{{ item }}"
@@ -117,3 +126,7 @@
 - ansible.builtin.include_tasks: add-service-accounts.yaml
 
 - ansible.builtin.include_tasks: ldapmodify.yaml
+
+
+- name: Force handlers to run now
+  ansible.builtin.meta: flush_handlers

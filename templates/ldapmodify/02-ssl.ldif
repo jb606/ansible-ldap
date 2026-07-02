@@ -3,4 +3,6 @@ changetype: modify
 replace: olcAuthzRegexp
 olcAuthzRegexp: {0}"CN=([^,]+),OU=NPE,O={{ organization }}" "ldap:///ou=computers,{{ base_dn }}??sub?(cn=$1)"
 olcAuthzRegexp: {1}"CN=([^,]+),O={{ organization }}" "ldap:///ou=people,{{ base_dn }}??sub?(cn=$1)"
-
+-
+replace: olcAuthzPolicy
+olcAuthzPolicy: to

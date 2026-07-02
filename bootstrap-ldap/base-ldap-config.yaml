@@ -1,5 +1,13 @@
 --- 
  #--- Generate credentials ---
+- name: "Create {{ remote_tmpdir }} directory"
+  ansible.builtin.file:
+    path: "{{ remote_tmpdir }}"
+    state: directory
+    owner: ldap
+    group: ldap
+    mode: '0700'
+  notify: Cleanup tmp
 
 - name: Generate admin password hash
   ansible.builtin.command: "slappasswd -s {{ admin_pw | quote }}"
@@ -53,3 +61,6 @@
   ansible.builtin.command: >
     slapadd -n 0 -F /etc/openldap/slapd.d -l {{ remote_tmpdir }}/01-db.ldif
   changed_when: true
+
+- name: Force handlers to run now
+  ansible.builtin.meta: flush_handlers

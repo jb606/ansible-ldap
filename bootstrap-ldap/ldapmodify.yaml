@@ -33,3 +33,6 @@
   loop: "{{ ldap_modify_files }}"
   no_log: true
   changed_when: true
+
+- name: Force handlers to run now
+  ansible.builtin.meta: flush_handlers

@@ -25,7 +25,8 @@ changetype: modify
 replace: olcAccess
 olcAccess: {0}to attrs=userPassword
   by self write
-  by dn.exact="{{ admin_dn }}" write
+  by dn.exact="{{ admin_dn }}" manage
+  by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage
   by dn.exact="{{ nss_bind_dn }}" auth
   by dn.exact="{{ radius_bind_dn }}" auth
   by anonymous auth
@@ -33,14 +34,17 @@ olcAccess: {0}to attrs=userPassword
 olcAccess: {1}to attrs=shadowLastChange,shadowExpire,shadowFlag,shadowInactive,shadowMax,shadowMin,shadowWarning
   by self read
   by dn.exact="{{ admin_dn }}" write
+  by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage
   by dn.exact="{{ nss_bind_dn }}" read
   by * none
 olcAccess: {2}to attrs=pwdAccountLockedTime,pwdChangedTime,pwdFailureTime,pwdGraceUseTime,pwdHistory,pwdPolicySubentry,pwdReset,pwdStartTime
   by self read
   by dn.exact="{{ admin_dn }}" manage
+  by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage
   by * none
 olcAccess: {3}to attrs=uidNumber,gidNumber,loginShell,homeDirectory
   by self read
+  by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage
   by dn.exact="{{ admin_dn }}" write
   by dn.exact="{{ nss_bind_dn }}" read
   by * none
@@ -54,20 +58,22 @@ olcAccess: {5}to dn.subtree="ou=Password,ou=Policies,{{ base_dn }}"
   by * none
 olcAccess: {6}to attrs=cn,sn,givenName,displayName,mail,member,memberOf,uniqueMember
   by self read
+  by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage
   by dn.exact="{{ admin_dn }}" manage
   by dn.exact="{{ nss_bind_dn }}" read
   by users read
   by * none
 olcAccess: {7}to attrs=telephoneNumber,mobile,description
   by self write
+  by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage
   by dn.exact="{{ admin_dn }}" manage
   by dn.exact="{{ nss_bind_dn }}" read
   by users read
   by * none
 olcAccess: {8}to dn.subtree="{{ base_dn }}"
   by self read
-  by dn.exact="{{ admin_dn }}" manage
   by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage
+  by dn.exact="{{ admin_dn }}" manage
   by dn.exact="{{ nss_bind_dn }}" read
   by dn.exact="{{ sudo_bind_dn }}" read
   by users read
