@@ -47,6 +47,7 @@ olcAccess: {3}to attrs=uidNumber,gidNumber,loginShell,homeDirectory
   by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage
   by dn.exact="{{ admin_dn }}" write
   by dn.exact="{{ nss_bind_dn }}" read
+  by users read
   by * none
 olcAccess: {4}to attrs=entryCSN,entryUUID,modifyTimestamp,modifiersName,createTimestamp,creatorsName,structuralObjectClass
   by dn.exact="{{ admin_dn }}" manage
@@ -55,6 +56,7 @@ olcAccess: {4}to attrs=entryCSN,entryUUID,modifyTimestamp,modifiersName,createTi
 olcAccess: {5}to dn.subtree="ou=Password,ou=Policies,{{ base_dn }}"
   by dn.exact="{{ admin_dn }}" manage
   by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage
+  by users read
   by * none
 olcAccess: {6}to attrs=cn,sn,givenName,displayName,mail,member,memberOf,uniqueMember
   by self read

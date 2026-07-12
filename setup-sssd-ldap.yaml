@@ -1,0 +1,46 @@
+---
+- name: Setup SSSD for clients
+  hosts: ldap_clients
+  become: true
+  gather_facts: false
+  vars_files:
+    - vars.yaml
+    - vault.yaml
+
+
+  tasks:
+
+    - name: Install required SSSD packages
+      notify: enable sssd
+      ansible.builtin.package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - sssd-common
+        - sssd-ldap
+        - sssd-client
+        - cyrus-sasl
+        - cyrus-sasl-ldap
+        - sssd
+
+
+    - name: Uploading SSSD config
+      notify: restart sssd
+      ansible.builtin.template:
+        src: templates/sssd/sssd.conf.j2
+        dest: /etc/sssd/sssd.conf
+        owner: root
+        group: root
+        mode: '600'
+      vars:
+        ldap_server: "ldaps://{{ ldap_hostname }}:636"
+
+  handlers:
+    - name: enable sssd
+      ansible.builtin.systemd:
+        name: sssd.service
+        state: enabled
+    - name: restart sssd
+      ansible.builtin.systemd:
+        name: sssd.service
+        state: restarted

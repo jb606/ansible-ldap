@@ -1,5 +1,5 @@
 ---
-- name: Add LDAP Users 
+- name: Add LDAP Users
   hosts: localhost
   connection: local
   gather_facts: false
@@ -45,7 +45,7 @@
 
     - name: Create user entries in ou=People
       community.general.ldap_entry:
-        dn: "uid={{ item.user_name }},ou=People,{{ base_dn }}"
+        dn: "cn={{ item.first_name }} {{ item.last_name }},ou=People,{{ base_dn }}"
         objectClass:
           - top
           - person
@@ -62,7 +62,7 @@
           gidNumber: "{{ item.gid }}"
           homeDirectory: "{{ item.homeDirectory | default(var_default_home_path) + '/' + item.user_name  }}"
           loginShell: "{{ item.shell | default(var_default_shell) }}"
-          shadowMin: "{{ var_min_password_length}}"
+          shadowMin: "{{ var_min_password_length }}"
           shadowMax: "{{ var_max_password_age }}"
           shadowWarning: "{{ var_password_warn_age }}"
           shadowInactive: "{{ var_inactive_days }}"
@@ -70,8 +70,24 @@
         server_uri: "{{ ldap_server }}"
         bind_dn: "{{ admin_dn }}"
         bind_pw: "{{ admin_pw }}"
+        binary_attributes:
+          - userCertificate
         state: present
       loop: "{{ var_approved_users }}"
       when: item.enabled | default(true)
 
 
+    - name: Securely upload binary certificate attributes
+      community.general.ldap_attrs:
+        dn: "cn={{ item.first_name }} {{ item.last_name }},ou=People,{{ base_dn }}"
+        attributes:
+          "userCertificate;binary": "{{ item.cert | b64decode }}"
+        state: exact
+        binary_attributes:
+          - userCertificate
+        server_uri: "{{ ldap_server }}"
+        bind_dn: "{{ admin_dn }}"
+        bind_pw: "{{ admin_pw }}"
+      loop: "{{ var_approved_users }}"
+      when: item.cert is defined
+      no_log: true

@@ -101,3 +101,13 @@ var_approved_users:
     uid: 100101
     gid: 100101
 
+# cert can be either:
+#   - a full PEM certificate (contents of a .crt/.pem file, including the
+#     -----BEGIN/END CERTIFICATE----- lines), or
+#   - the base64-encoded DER form on a single line, e.g.:
+#       openssl x509 -in computer1.crt -outform DER | base64 -w0
+# The playbook strips PEM armor/whitespace and decodes it to raw DER bytes
+# before sending it as userCertificate;binary.
+var_approved_computers:
+  - computer: computer1.example.com
+    cert: AAAABBBBCCCC

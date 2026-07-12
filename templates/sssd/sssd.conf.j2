@@ -1,0 +1,31 @@
+[pam]
+pam_cert_auth = True
+
+[sssd]
+config_file_version = 2
+services = nss, pam
+domains = {{organization}}
+
+[domain/{{organization}}]
+# Providers
+id_provider = ldap
+auth_provider = ldap
+chpass_provider = ldap
+
+ldap_uri = {{ ldap_server }}
+ldap_search_base = {{ base_dn }}
+ldap_id_use_start_tls = False
+
+ldap_tls_cacert = /etc/pki/tls/certs/ca-bundle.crt
+ldap_sasl_mech = EXTERNAL
+ldap_tls_cert = /etc/pki/tls/certs/{{inventory_hostname}}.crt
+ldap_tls_key = /etc/pki/tls/private/{{inventory_hostname}}.key
+ldap_tls_reqcert = demand
+
+access_provider = permit
+sudo_provider = ldap
+autofs_provider = ldap
+resolver_provider = ldap
+
+ldap_user_certificate = userCertificate;binary
+
