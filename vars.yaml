@@ -7,6 +7,9 @@
 #
 # Base Domain Config 
 #
+
+distro_base_python_interpreter: /usr/bin/python3
+
 base_dn: dc=example,dc=com
 admin_dn: "cn=admin,{{base_dn}}"
 admin_pw: "."
