@@ -2,6 +2,7 @@ dn: cn=Default,ou=Password,ou=Policies,{{ base_dn }}
 objectClass: top
 objectClass: device
 objectClass: pwdPolicy
+objectClass: pwdPolicyChecker
 cn: Default
 description: Default password policy
 pwdAttribute: userPassword
