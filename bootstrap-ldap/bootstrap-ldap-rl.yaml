@@ -1,13 +1,6 @@
 ---
-- name: "Create {{ remote_tmpdir }} directory"
-  ansible.builtin.file:
-    path: "{{ remote_tmpdir }}"
-    state: directory
-    owner: ldap
-    group: ldap
-    mode: '0700'
-  notify: Cleanup tmp
 
+# Need the packages first
 - name: Installing openldap
   ansible.builtin.package:
     name: "{{ item }}"
@@ -18,6 +11,15 @@
     - openldap-clients
     - python3-firewall
     - python3-ldap
+
+- name: "Create {{ remote_tmpdir }} directory"
+  ansible.builtin.file:
+    path: "{{ remote_tmpdir }}"
+    state: directory
+    owner: ldap
+    group: ldap
+    mode: '0700'
+  notify: Cleanup tmp
 
 - name: Stop and disable slapd if running
   ansible.builtin.systemd:
