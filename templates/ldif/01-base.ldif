@@ -15,6 +15,9 @@ objectClass: top
 objectClass: organizationalUnit
 ou: Groups
 
-
+dn: ou=Admins,{{ base_dn }}
+objectClass: top
+objectClass: organizationalUnit
+ou: Admins
 
 
