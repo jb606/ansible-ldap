@@ -1,82 +1,49 @@
-# Secure OpenLDAP ACL configuration
-# Replaces the default ACLs set in 01-db.ldif.
-#
-# Load after slapd is running:
-#   ldapmodify -Y EXTERNAL -H ldapi:/// -f 05-acls.ldif
-#
-# Required vars.yaml additions (see bottom of vars.yaml for stubs):
-#   nss_bind_dn    - service account for NSS/PAM host lookups
-#   sudo_bind_dn   - service account for sudo policy lookups
-#   radius_bind_dn - service account for RADIUS authentication
-#
-# Security model:
-#   - Anonymous users cannot browse the directory; they can only initiate a
-#     bind (step 2 of the PAM/NSS two-step: search-as-nss, bind-as-user).
-#   - Service accounts are granted the minimum read rights their function requires.
-#   - Sensitive operational attributes (ppolicy state, shadow fields, NSS identity
-#     fields) are hidden from regular authenticated users.
-#   - Sudoers and password-policy subtrees are invisible except to admin and the
-#     relevant service account.
-#   - Users may update their own public profile (name, email, phone); structural
-#     and identity attributes are admin-only.
-
 dn: olcDatabase={1}mdb,cn=config
 changetype: modify
 replace: olcAccess
-olcAccess: {0}to attrs=userPassword
-  by self write
+olcAccess: {0}to *
   by dn.exact="{{ admin_dn }}" manage
   by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage
-  by dn.exact="{{ nss_bind_dn }}" auth
+  by dn.subtree="ou=admins,{{ base_dn }}" manage
+  by * break
+olcAccess: {1}to attrs=userPassword
+  by self write
+  by dn.subtree="ou=computers,{{ base_dn }}" auth
   by dn.exact="{{ radius_bind_dn }}" auth
   by anonymous auth
   by * none
-olcAccess: {1}to attrs=shadowLastChange,shadowExpire,shadowFlag,shadowInactive,shadowMax,shadowMin,shadowWarning
+olcAccess: {2}to attrs=shadowLastChange,shadowExpire,shadowFlag,shadowInactive,shadowMax,shadowMin,shadowWarning
   by self read
-  by dn.exact="{{ admin_dn }}" write
-  by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage
   by dn.exact="{{ nss_bind_dn }}" read
   by * none
-olcAccess: {2}to attrs=pwdAccountLockedTime,pwdChangedTime,pwdFailureTime,pwdGraceUseTime,pwdHistory,pwdPolicySubentry,pwdReset,pwdStartTime
+olcAccess: {3}to attrs=pwdAccountLockedTime,pwdChangedTime,pwdFailureTime,pwdGraceUseTime,pwdHistory,pwdPolicySubentry,pwdReset,pwdStartTime
   by self read
-  by dn.exact="{{ admin_dn }}" manage
-  by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage
   by * none
-olcAccess: {3}to attrs=uidNumber,gidNumber,loginShell,homeDirectory
+olcAccess: {4}to attrs=uidNumber,gidNumber,loginShell,homeDirectory
   by self read
   by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage
   by dn.exact="{{ admin_dn }}" write
-  by dn.exact="{{ nss_bind_dn }}" read
+  by dn.subtree="ou=computers,{{ base_dn }}" read
   by users read
   by * none
-olcAccess: {4}to attrs=entryCSN,entryUUID,modifyTimestamp,modifiersName,createTimestamp,creatorsName,structuralObjectClass
-  by dn.exact="{{ admin_dn }}" manage
-  by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage
+olcAccess: {5}to attrs=entryCSN,entryUUID,modifyTimestamp,modifiersName,createTimestamp,creatorsName,structuralObjectClass
   by * none
-olcAccess: {5}to dn.subtree="ou=Password,ou=Policies,{{ base_dn }}"
-  by dn.exact="{{ admin_dn }}" manage
-  by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage
+olcAccess: {6}to dn.subtree="ou=Password,ou=Policies,{{ base_dn }}"
   by users read
   by * none
-olcAccess: {6}to attrs=cn,sn,givenName,displayName,mail,member,memberOf,uniqueMember
+olcAccess: {7}to attrs=cn,sn,givenName,displayName,mail,member,memberOf,uniqueMember
   by self read
-  by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage
-  by dn.exact="{{ admin_dn }}" manage
-  by dn.exact="{{ nss_bind_dn }}" read
+  by dn.subtree="ou=computers,{{ base_dn }}" read
   by users read
   by * none
-olcAccess: {7}to attrs=telephoneNumber,mobile,description
+olcAccess: {8}to attrs=telephoneNumber,mobile,description
   by self write
-  by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage
-  by dn.exact="{{ admin_dn }}" manage
-  by dn.exact="{{ nss_bind_dn }}" read
+  by dn.subtree="ou=computers,{{ base_dn }}" read
   by users read
   by * none
-olcAccess: {8}to dn.subtree="{{ base_dn }}"
+olcAccess: {9}to dn.subtree="{{ base_dn }}"
   by self read
-  by dn.exact="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" manage
-  by dn.exact="{{ admin_dn }}" manage
-  by dn.exact="{{ nss_bind_dn }}" read
+  by dn.subtree="ou=computers,{{ base_dn }}" read
   by dn.exact="{{ sudo_bind_dn }}" read
   by users read
   by * none
